@@ -189,12 +189,15 @@ def scale(adata: anndata.AnnData,
 
     """
     if mean is None:
-        mean = adata.var['mean_scaling']
+        mean = adata.var['mean_scaling'].values
     if var is None:
-        var = adata.var['var_scaling']
+        var = adata.var['var_scaling'].values
 
     if scipy.sparse.issparse(adata.X):
         adata.X = adata.X.todense()
+
+    var = np.array(var).reshape(1, -1)
+    mean = np.array(mean).reshape(1, -1)
 
     np.divide(adata.X, var, out=adata.X)
     np.subtract(adata.X, np.divide(mean, var), out=adata.X)

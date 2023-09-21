@@ -33,7 +33,7 @@
                 }
             },
             "model": {
-                "activation_fn": "tensorflow_addons.activations.mish",
+                "activation_fn": "tensorflow.keras.activations.mish",
                 "conditional_regularization": {
                     "l2": 0.0,
                     "name": "tensorflow.keras.regularizers.L1L2"
@@ -67,7 +67,7 @@
                 "output_fn": null,
                 "reconstruction_loss": {
                     "delta": 9.0,
-                    "name": "HuberLoss"
+                    "name": "tensorflow.keras.losses.Huber"
                 },
                 "wae_lambda": 1500,
                 "weighting_decoder_dropout": 10000,
@@ -86,7 +86,7 @@
                 },
                 "max_steps": 200,
                 "optimizer": {
-                    "algorithm": "tensorflow_addons.optimizers.RectifiedAdam",
+                    "algorithm": "tensorflow.keras.optimizers.Adam",
                     "amsgrad": false,
                     "beta_1": 0.85,
                     "beta_2": 0.95,

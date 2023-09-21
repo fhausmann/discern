@@ -19,7 +19,7 @@ class DISCERNRunner:
     """Run DISCERN training or project."""
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, debug: bool = False, gpus: List[int] = None):
+    def __init__(self, debug: bool = False, gpus: Optional[List[int]] = None):
         """SetUp the runner.
 
         Args:

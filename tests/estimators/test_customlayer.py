@@ -13,14 +13,6 @@ from discern.estimators import customlayers
 class SigmaRegularizationTest(keras_parameterized.TestCase):
     """Tests for SigmaRegularization."""
 
-    #
-    @keras_parameterized.run_all_keras_modes
-    def test_basic_sigma_regularization(self):  # pylint: disable=no-self-use
-        """Test layer creation."""
-        testing_utils.layer_test(customlayers.SigmaRegularization,
-                                 kwargs={},
-                                 input_shape=(3, 4))
-
     @tf_test_util.run_in_graph_and_eager_modes
     def test_sigma_regularization_weights(self):
         """Test weight creation."""
@@ -36,11 +28,8 @@ class SigmaRegularizationTest(keras_parameterized.TestCase):
             model = keras.models.Sequential()
             reg = customlayers.SigmaRegularization()
             model.add(reg)
-            should = testing_utils.should_run_tf_function()  # pylint: disable=no-member
             model.compile(loss=lambda x, y: tf.reduce_mean(x - y),
-                          optimizer='adam',
-                          run_eagerly=testing_utils.should_run_eagerly(),
-                          experimental_run_tf_function=should)
+                          optimizer='adam')
 
             # centered on 5.0, variance 10.0
             xval = np.random.normal(loc=5.0, scale=10.0, size=(1000, 3))
@@ -84,9 +73,6 @@ class GaussianReparametrizationTest(keras_parameterized.TestCase):
         output = add_layer([input1, input2])
         self.assertListEqual(output.shape.as_list(), [None, 4])
         model = keras.models.Model([input1, input2], output)
-        model.run_eagerly = testing_utils.should_run_eagerly()
-        should = testing_utils.should_run_tf_function()  # pylint: disable=no-member
-        model._experimental_run_tf_function = should  # pylint: disable=protected-access
         mean = np.random.rand(2, 4)
         sigma = np.random.rand(2, 4)
         out = model.predict([mean, sigma])
@@ -154,9 +140,6 @@ class MMDPPTest(keras_parameterized.TestCase):
         output = add_layer([input1, input2])
         self.assertListEqual(output.shape.as_list(), [None])
         model = keras.models.Model([input1, input2], output)
-        model.run_eagerly = testing_utils.should_run_eagerly()
-        should = testing_utils.should_run_tf_function()  # pylint: disable=no-member
-        model._experimental_run_tf_function = should  # pylint: disable=protected-access
         mean = np.random.rand(2, 4)
         sigma = np.random.rand(2, 4)
         out = model.predict([mean, sigma])

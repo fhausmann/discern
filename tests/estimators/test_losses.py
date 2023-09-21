@@ -120,35 +120,6 @@ class DummyLossTest(test.TestCase):
         got = keras.backend.eval(recovered.call(y_a, y_b))
         self.assertAllClose(expected, got)
 
-
-@tf_test_util.run_all_in_graph_and_eager_modes
-class HuberLossTest(test.TestCase):
-    """ Tests HuberLoss """
-    def test_huber_loss_output_shape(self):
-        tests = (0.1, 0.5, 1., 10.)
-        shape = [6, 7]
-        for delta in tests:
-            y_a = keras.backend.variable(np.random.random_sample(shape))
-            y_b = keras.backend.variable(np.random.random_sample(shape))
-            obj = discern_losses.HuberLoss(delta=delta)
-            objective_output = obj.call(y_a, y_b)
-            self.assertListEqual(objective_output.shape.as_list(), shape[:1])
-
-    def test_huber_loss_loss(self):
-        y_a_np = np.array([[2, 4, 7], [5, 3, 8]], dtype=np.float32)
-        y_a = keras.backend.variable(y_a_np)
-        y_b_np = np.array([[2, 2, 3], [8, 5, 2]], dtype=np.float32)
-        y_b = keras.backend.variable(y_b_np)
-        tests = (0.0, 0.1, 0.25, 0.5, 1., 3., 5.)
-        for delta in tests:
-            expected_obj = keras.losses.Huber(delta=delta)
-            obj = discern_losses.HuberLoss(delta=delta)
-            expected = keras.backend.eval(expected_obj.call(y_a, y_b))
-            expected = expected.mean(axis=1)
-            got = keras.backend.eval(obj.call(y_a, y_b))
-            self.assertAllClose(got, expected)
-
-
 @tf_test_util.run_all_in_graph_and_eager_modes
 class MaskedCrossEntropy(test.TestCase):
     """ Tests MaskedCrossEntropy."""

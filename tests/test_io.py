@@ -53,11 +53,15 @@ def test_tfrecords(tmp_path, anndata_file):
                               n_labels=nlabels)
     all_vals = []
     for inputs, outputs in data:
-        np.testing.assert_array_equal(inputs['input_data'], outputs[0])
-        np.testing.assert_array_equal(inputs['input_data'], outputs[1])
+        np.testing.assert_array_equal(inputs['input_data'],
+                                      outputs["decoder_counts"])
+        np.testing.assert_array_equal(inputs['input_data'],
+                                      outputs["decoder_dropouts"])
         np.testing.assert_array_equal(inputs['batch_input_enc'],
                                       inputs['batch_input_dec'])
-        all_vals.append(outputs[0])
+        np.testing.assert_array_equal(outputs['sigma_regularization'], 0.0)
+        np.testing.assert_array_equal(outputs['mmdpp'], 0.0)
+        all_vals.append(outputs["decoder_counts"])
     all_vals = tf.stack(all_vals).numpy()
     all_vals = np.squeeze(all_vals)
     all_mean = all_vals.mean(axis=0)
@@ -73,11 +77,15 @@ def test_tfrecords(tmp_path, anndata_file):
                               n_labels=2)
     all_vals = []
     for inputs, outputs in data:
-        np.testing.assert_array_equal(inputs['input_data'], outputs[0])
-        np.testing.assert_array_equal(inputs['input_data'], outputs[1])
+        np.testing.assert_array_equal(inputs['input_data'],
+                                      outputs["decoder_counts"])
+        np.testing.assert_array_equal(inputs['input_data'],
+                                      outputs["decoder_dropouts"])
         np.testing.assert_array_equal(inputs['batch_input_enc'],
                                       inputs['batch_input_dec'])
-        all_vals.append(outputs[0])
+        np.testing.assert_array_equal(outputs['sigma_regularization'], 0.0)
+        np.testing.assert_array_equal(outputs['mmdpp'], 0.0)
+        all_vals.append(outputs["decoder_counts"])
     all_vals = tf.stack(all_vals).numpy()
     all_vals = np.squeeze(all_vals)
     all_mean = all_vals.mean(axis=0)
@@ -164,7 +172,10 @@ def test_generate_h5ad_with_sampling(monkeypatch, anndata_file, tmp_path,
 
     monkeypatch.setattr(functions, "sample_counts", _check_sampling)
 
-    io.generate_h5ad(counts=(counts.copy(), probas.copy()),
+    io.generate_h5ad(counts={
+        "decoder_counts": counts.copy(),
+        "decoder_dropouts": probas.copy()
+    },
                      var=anndata_file.var,
                      obs=anndata_file.obs,
                      uns=anndata_file.uns,
@@ -272,10 +283,10 @@ def check_tf_records(got: tf.data.Dataset,
         assert got.element_spec[0]["batch_input_enc"].dtype == dtype
         assert got.element_spec[0]["input_data"].shape == n_genes
         assert got.element_spec[0]["input_data"].dtype == dtype
-        assert got.element_spec[1][0].shape == n_genes
-        assert got.element_spec[1][0].dtype == dtype
-        assert got.element_spec[1][1].shape == n_genes
-        assert got.element_spec[1][1].dtype == dtype
+        assert got.element_spec[1]["decoder_counts"].shape == n_genes
+        assert got.element_spec[1]["decoder_counts"].dtype == dtype
+        assert got.element_spec[1]["decoder_dropouts"].shape == n_genes
+        assert got.element_spec[1]["decoder_dropouts"].dtype == dtype
         for i, element in enumerate(got):
             np.testing.assert_equal(
                 element[0]["batch_input_enc"].numpy().argmax(),
@@ -285,8 +296,12 @@ def check_tf_records(got: tf.data.Dataset,
                 expected_labels[i])
             np.testing.assert_allclose(element[0]["input_data"],
                                        expected_counts[i])
-            np.testing.assert_allclose(element[1][0], expected_counts[i])
-            np.testing.assert_allclose(element[1][1], expected_counts[i])
+            np.testing.assert_allclose(element[1]["decoder_counts"],
+                                       expected_counts[i])
+            np.testing.assert_allclose(element[1]["decoder_dropouts"],
+                                       expected_counts[i])
+            np.testing.assert_allclose(element[1]["mmdpp"], 0.0)
+            np.testing.assert_allclose(element[1]["sigma_regularization"], 0.0)
 
 
 @pytest.mark.parametrize('with_list', [False, True])
@@ -320,10 +335,10 @@ def test_parse_tfrecords(monkeypatch, tmp_path, with_list, n_labels):
         assert got.element_spec[0]["batch_input_enc"].dtype == dtype
         assert got.element_spec[0]["input_data"].shape == genes_no
         assert got.element_spec[0]["input_data"].dtype == dtype
-        assert got.element_spec[1][0].shape == genes_no
-        assert got.element_spec[1][0].dtype == dtype
-        assert got.element_spec[1][1].shape == genes_no
-        assert got.element_spec[1][1].dtype == dtype
+        assert got.element_spec[1]["decoder_counts"].shape == genes_no
+        assert got.element_spec[1]["decoder_counts"].dtype == dtype
+        assert got.element_spec[1]["decoder_dropouts"].shape == genes_no
+        assert got.element_spec[1]["decoder_dropouts"].dtype == dtype
     else:
         check_tf_records(got, expected_counts, original_labels.argmax(axis=1),
                          False)

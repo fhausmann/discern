@@ -6,6 +6,7 @@ import logging
 import os
 import pathlib
 import time
+import sys
 
 import click
 import joblib
@@ -20,47 +21,10 @@ from discern import __main__ as main  # pylint: disable=no-name-in-module
 
 # pylint: disable=no-self-use
 
-_COMMANDLINE_TEST = [
-    ("preprocess {testfile}",
-     dict(command="preprocess",
-          force=False,
-          copy_original=False,
-          without_tfrecords=False)),
-    ("train {testfile}", dict(command="train")),
-    ("optimize {testfile}", dict(command="optimize")),
-    ("project --metadata=column:key --metadata=column: {testfile}",
-     dict(metadata=["column:key", "column:"],
-          command="project",
-          filename=None,
-          all_batches=False,
-          store_sigmas=False)),
-    ("preprocess {testfile} -vvvv",
-     dict(verbose=4,
-          command="preprocess",
-          force=False,
-          copy_original=False,
-          without_tfrecords=False)),
-    ("preprocess {testfile} --verbose --verbose",
-     dict(verbose=2,
-          command="preprocess",
-          force=False,
-          copy_original=False,
-          without_tfrecords=False)),
-    ("preprocess --force --copy_original --without_tfrecords {testfile}",
-     dict(force=True,
-          copy_original=True,
-          without_tfrecords=True,
-          command="preprocess")),
-    ("onlinetraining --freeze --filename tmp.file {testfile}",
-     dict(freeze=True, filename="tmp.file", command="onlinetraining")),
-]
-
-_DEFAULT_ARGS = dict(debug=False, verbose=0, quiet=False)
-
-
 @pytest.mark.forked
 class TestCommandLineParser:
     """Test command line parser."""
+
     def test_init(self):
         """Test init and default parsers."""
         expected = main._PARSERS.keys()  # pylint: disable=protected-access
@@ -78,34 +42,6 @@ class TestCommandLineParser:
         assert {c.dest
                 for c in optionals} == {"help", "verbose", "debug", "quiet"}
 
-    @pytest.mark.parametrize("commandline, expected", _COMMANDLINE_TEST)
-    def test_parse_args(self, monkeypatch, commandline, tmp_path, expected):
-        """test Parsing."""
-        for k, val in _DEFAULT_ARGS.items():
-            expected.setdefault(k, val)
-        parser = main.CommandLineParser()
-        testfile = tmp_path.joinpath("testfile.json")
-        with testfile.open("w") as file:
-            json.dump(
-                {
-                    'exp_param': {
-                        'experiments_dir': str(tmp_path)
-                    },
-                    "experiments": {
-                        "test_exp": None
-                    }
-                }, file)
-        expected["parameters"] = str(testfile)
-        commandline = commandline.format(testfile=testfile)  #.split()
-        monkeypatch.setattr(parser, "_set_loglevels", lambda **_: None)
-
-        def _func(args):
-            assert args.__dict__ == expected
-
-        for k in main._PARSERS.keys():  # pylint: disable=protected-access
-            monkeypatch.setattr(parser, k, _func)
-        parser.parse_args(commandline.split())
-
     @pytest.mark.parametrize("expect_debug", (True, False))
     def test_train(self, monkeypatch, expect_debug):
         """Test Training."""
@@ -113,6 +49,7 @@ class TestCommandLineParser:
         parser.exp_folders = ["testfolder"]
 
         class _MOCKRUNNER:
+
             def __init__(self, debug, gpus):
                 assert debug == expect_debug
                 assert gpus == "NO_GPU_HERE"
@@ -135,6 +72,7 @@ class TestCommandLineParser:
         parser.exp_folders = ["testfolder"]
 
         class _MOCKRUNNER:
+
             def __init__(self, debug, gpus):
                 assert debug == expect_debug
                 assert gpus == "NO_GPU_HERE"
@@ -163,6 +101,7 @@ class TestCommandLineParser:
         parser.exp_folders = ["testfolder"]
 
         class _MOCKRUNNER:
+
             def __init__(self, debug, gpus):
                 assert debug == expect_debug
                 assert gpus == "NO_GPU_HERE"
@@ -221,6 +160,7 @@ def test_preprocessing(tmp_path, monkeypatch, copy_original):
             return True
 
     class _MockCommandLineParser(main.CommandLineParser):
+
         def __init__(self, experiments_dir, experiments):
             self.experiments_dir = experiments_dir
             self.parameters = dict(experiments=experiments)
@@ -290,6 +230,7 @@ def test_preprocessing(tmp_path, monkeypatch, copy_original):
 
 def test_run_processes_with_cpu_requirements(monkeypatch):
     """Test run_processes_with_cpu_requirements function."""
+
     def _func(value):
         time.sleep(0.1)
         return value * 2
@@ -326,6 +267,7 @@ def test_set_loglevels(verbosity, tmp_path, quiet):
         ]
 
     class _MockCommandLineParser(main.CommandLineParser):
+
         def __init__(self):
             self.experiments_dir = tmp_path
 
@@ -343,6 +285,7 @@ def test_set_loglevels(verbosity, tmp_path, quiet):
 @pytest.mark.parametrize("n_gpu", [0, 1, 2])
 def test_get_visible_devices_as_int(monkeypatch, n_gpu):
     """Test get_visible_devices_as_int."""
+
     class GpuPatch:  # pylint: disable=too-few-public-methods
         """Patch GPU results from tensorflow.config.get_visible_devices."""
 

@@ -7,8 +7,7 @@ DISCERN
 -------
 
 .. automodule:: discern
-   :members:
-   :inherited-members:
+   :members: DISCERN
 
 Reconstruction functions
 ------------------------

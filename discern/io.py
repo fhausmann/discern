@@ -34,7 +34,7 @@ def estimate_csr_nbytes(mat: np.ndarray) -> int:
     return mat.itemsize * non_zero + non_zero * int32_size + dim1 * int32_size
 
 
-def generate_h5ad(counts: Union[np.ndarray, Tuple[np.ndarray, np.ndarray]],
+def generate_h5ad(counts: Union[np.ndarray, Dict[str, np.ndarray]],
                   var: pd.DataFrame,
                   obs: pd.DataFrame,
                   save_path: Optional[pathlib.Path] = None,
@@ -43,7 +43,7 @@ def generate_h5ad(counts: Union[np.ndarray, Tuple[np.ndarray, np.ndarray]],
     """Generate AnnData format and can save it to file.
 
     Args:
-        counts (Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]): Count data (X in AnnData).
+        counts (Union[np.ndarray, Dict[str, np.ndarray]]): Count data (X in AnnData).
         var (pd.DataFrame): Variables dataframe.
         obs (pd.DataFrame): Observations dataframe.
         save_path (Optional[pathlib.Path]): Save path for the AnnData in h5py file.
@@ -59,7 +59,8 @@ def generate_h5ad(counts: Union[np.ndarray, Tuple[np.ndarray, np.ndarray]],
     if isinstance(counts, np.ndarray):
         estimated_dropouts = None
     else:
-        counts, estimated_dropouts = counts
+        estimated_dropouts = counts["decoder_dropouts"]
+        counts = counts["decoder_counts"]
 
     data = anndata.AnnData(X=counts, var=var, obs=obs, **kwargs)
 
@@ -249,18 +250,18 @@ class DISCERNData(anndata.AnnData):
                                  dataset=name,
                                  got_shape=inputdata["input_data"].shape,
                                  expected_shape=n_genes))
-            if outputdata[0].shape != n_genes:
+            if outputdata["decoder_counts"].shape != n_genes:
                 raise RuntimeError(
                     error.format(name="expected1",
                                  dataset=name,
-                                 got_shape=outputdata[0].shape,
+                                 got_shape=outputdata["decoder_counts"].shape,
                                  expected_shape=n_genes))
 
-            if outputdata[1].shape != n_genes:
+            if outputdata["decoder_dropouts"].shape != n_genes:
                 raise RuntimeError(
                     error.format(name="expected2",
                                  dataset=name,
-                                 got_shape=outputdata[1].shape,
+                                 got_shape=outputdata["decoder_dropouts"].shape,
                                  expected_shape=n_genes))
         self._tfdata = (tfdata[0], tfdata[1])
 
@@ -289,6 +290,7 @@ def parse_tfrecords(tfr_files: Union[pathlib.Path, List[pathlib.Path]],
             'batch_input_enc' and 'batch_input_dec'
 
     """
+
     def parser(serialized_example):  # pragma no cover
         outtype = tf.float32
         total_length = outtype.size * (genes_no + n_labels)
@@ -304,7 +306,12 @@ def parse_tfrecords(tfr_files: Union[pathlib.Path, List[pathlib.Path]],
             'input_data': dense,
             'batch_input_enc': batch_no,
             'batch_input_dec': batch_no
-        }, (dense, dense)
+        }, {
+            "decoder_counts": dense,
+            "decoder_dropouts": dense,
+            "sigma_regularization": tf.constant(0.0, shape=(1, 1)),
+            "mmdpp": tf.constant(0.0, shape=(1, 1)),
+        }
 
     tfr = [str(file) for file in tfr_files] if isinstance(
         tfr_files, list) else str(tfr_files)
@@ -353,8 +360,15 @@ def make_dataset_from_anndata(
         else:
             mapping = (dict(input_data=currdata.X,
                             batch_input_enc=curr_batch_no,
-                            batch_input_dec=curr_batch_no), (currdata.X,
-                                                             currdata.X))
+                            batch_input_dec=curr_batch_no),
+                       dict(
+                           decoder_counts=currdata.X,
+                           decoder_dropouts=currdata.X,
+                           sigma_regularization=tf.constant(
+                               0.0, shape=(currdata.X.shape[0], 1)),
+                           mmdpp=tf.constant(0.0,
+                                             shape=(currdata.X.shape[0], 1)),
+                       ))
         tfdatasets[split] = tf.data.Dataset.from_tensor_slices(mapping)
     return tfdatasets['train'], tfdatasets['valid']
 

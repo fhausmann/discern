@@ -4,7 +4,7 @@
 import json
 import logging
 import pathlib
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union, Optional
 
 import anndata
 import numpy as np
@@ -77,7 +77,7 @@ def read_raw_input(file_path: pathlib.Path) -> anndata.AnnData:
 def merge_data_sets(
         raw_inputs: Dict[str, anndata.AnnData],
         batch_keys: Dict[str,str],
-) -> Tuple[anndata.AnnData, Dict[int, str]]:
+) -> Tuple[anndata.AnnData, np.ndarray]:
     # yapf: enable
     """Merge a dictionary of AnnData files to a single AnnData object.
 
@@ -105,7 +105,7 @@ def merge_data_sets(
     sc_raw.obs_names_make_unique()
     sc_raw.obs.batch = sc_raw.obs.batch.astype("category")
 
-    return sc_raw, dict(enumerate(sc_raw.obs.batch.cat.categories))
+    return sc_raw, sc_raw.obs.batch.cat.categories.values.copy()
 
 
 def _integer_to_float(value: Union[int, float], total: int, key: str) -> float:
@@ -146,9 +146,9 @@ class WAERecipe:
 
     def __init__(self,
                  params: Dict[str, Any],
-                 inputs: Dict[str, anndata.AnnData] = None,
-                 input_files: Union[Dict[pathlib.Path, str],
-                                    List[pathlib.Path]] = None,
+                 inputs: Optional[Dict[str, anndata.AnnData]] = None,
+                 input_files: Optional[Union[Dict[pathlib.Path, str],
+                                             List[pathlib.Path]]] = None,
                  n_jobs: int = -1):
         """Initialize the class and set threading values."""
         if inputs is None and input_files is None:
@@ -166,7 +166,7 @@ class WAERecipe:
             raw_input_ds[ds_name] = read_raw_input(ds_path)
             batch_columns[ds_name] = batch if batch else "batch"
 
-        sc_raw, batch_integer_dict = merge_data_sets(raw_input_ds,
+        sc_raw, batches = merge_data_sets(raw_input_ds,
                                                      batch_columns)
 
         self.sc_raw = io.DISCERNData(sc_raw, batch_size=-1)
@@ -179,7 +179,7 @@ class WAERecipe:
             'batch_ratios': {},
             'valid_cells_no': {},
             'train_cells_no': {},
-            'batch_key': batch_integer_dict,
+            'batch_key': batches,
         }
         self._n_jobs = n_jobs
         sc.settings.n_jobs = n_jobs
@@ -321,16 +321,16 @@ class WAERecipe:
                                             int(valid_cells_ratio *
                                                 batch_indices.shape[0]),
                                             replace=False)
-            try:
-                self.sc_raw.obs.at[valid_indices, 'split'] = 'valid'
-            except AttributeError as exception:
-                cols = set(self.sc_raw.obs.columns[
-                    self.sc_raw.obs.columns.duplicated()])
+
+            cols = set(
+                self.sc_raw.obs.columns[self.sc_raw.obs.columns.duplicated()])
+            if cols:
                 raise NotImplementedError(
                     "DISCERN preprocessing currently does not support"
                     " duplicated column names, currently %s are duplicated" %
-                    cols) from exception
+                    cols)
 
+            self.sc_raw.obs.loc[valid_indices, 'split'] = 'valid'
             self.config["valid_cells_no"][batch] = len(valid_indices)
             self.config["train_cells_no"][batch] = len(batch_indices) - len(
                 valid_indices)
@@ -349,7 +349,7 @@ class WAERecipe:
 
         stratif_data = valid_cells['batch'].astype(str)
         if "celltype" in valid_cells.columns:
-            stratif_data += valid_cells['celltype'].astype(str)
+            stratif_data = stratif_data + valid_cells['celltype'].astype(str)
 
         freq = stratif_data.value_counts(normalize=True, sort=False).to_frame()
         freq.columns = ['frequency']
@@ -362,7 +362,7 @@ class WAERecipe:
                                       random_state=split_seed,
                                       replace=False,
                                       weights="frequency").index
-        self.sc_raw.obs.at[indices, 'for_mmd'] = True
+        self.sc_raw.obs.loc[indices, 'for_mmd'] = True
 
     def projection_pca(self, pcs: int = 25):
         """Apply PCA projection.

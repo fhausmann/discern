@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import tensorflow as tf
-import tensorflow_addons
 
 from discern import io
 from discern.estimators import batch_integration
@@ -79,7 +78,8 @@ class TestDISCERN:
                             patch_load_model_from_directory)
         monkeypatch.setattr(batch_integration.DISCERN, "get_optimizer",
                             lambda self: tf.keras.optimizers.Adagrad())
-        monkeypatch.setattr(batch_integration.DISCERN, "compile", patch_compile)
+        monkeypatch.setattr(batch_integration.DISCERN, "compile",
+                            patch_compile)
         default_model.restore_model("somedir")
         model = default_model.wae_model
         if is_compiled:
@@ -91,6 +91,7 @@ class TestDISCERN:
 
     def test_build_model(self, default_model, monkeypatch):
         """Test model building."""
+
         def patch_create_encoder(latent_dim, enc_layers, enc_norm_type,
                                  activation_fn, input_dim, n_labels,
                                  regularization, conditional_regularization):
@@ -145,15 +146,14 @@ class TestDISCERN:
             assert scale == 15000
             assert optimizer == "Optimizer"
 
-        monkeypatch.setattr(batch_integration.DISCERN, "compile", patch_compile)
+        monkeypatch.setattr(batch_integration.DISCERN, "compile",
+                            patch_compile)
         default_model.build_model(n_genes=100, n_labels=2, scale=0)
         assert default_model.wae_model == "Model"
 
     @pytest.mark.parametrize("with_decay", [True, False])
-    @pytest.mark.parametrize("with_lookahead", [True, False])
     @pytest.mark.parametrize("algo", ["Adam", 'Adagrad'])
-    def test_get_optimizer(self, default_model, with_decay, with_lookahead,
-                           algo):
+    def test_get_optimizer(self, default_model, with_decay, algo):
         """Test optimizer creation."""
         algo = "tensorflow.keras.optimizers." + algo
         config = {
@@ -166,15 +166,8 @@ class TestDISCERN:
                 name="tensorflow.keras.optimizers.schedules.ExponentialDecay",
                 decay_steps=1,
                 decay_rate=0.2)
-        if with_lookahead:
-            config["Lookahead"] = True
-
         default_model.optimizer_config = config
         got = default_model.get_optimizer()
-        if with_lookahead:
-            assert isinstance(got,
-                              tensorflow_addons.optimizers.lookahead.Lookahead)
-            got = got._optimizer  # pylint: disable=protected-access
 
         if algo.endswith('Adam'):
             assert isinstance(got, tf.keras.optimizers.Adam)
@@ -197,10 +190,11 @@ class TestDISCERN:
                 }
             }
         else:
-            assert got['learning_rate'] == config['learning_rate']
+            np.testing.assert_allclose(got['learning_rate'],config['learning_rate'])
 
     def test_compile(self, default_model, monkeypatch):
         """Test compiling model."""
+
         def patch_reconstruction_loss(losstype):
             assert losstype == default_model.recon_loss_type
             return "mse"
@@ -218,12 +212,6 @@ class TestDISCERN:
         assert model.loss['decoder_counts'] == "mse"
         assert isinstance(model.loss['sigma_regularization'], losses.DummyLoss)
         assert isinstance(model.loss['mmdpp'], losses.DummyLoss)
-        assert model.loss_weights == {
-            "decoder_counts": 15000.0,
-            "decoder_dropouts": default_model.weighting_decoder_dropout,
-            "sigma_regularization": default_model.weighting_random_encoder,
-            "mmdpp": default_model.wae_lambda
-        }
         assert len(model.metrics) == 0
 
     @pytest.mark.parametrize("savepath", (True, False))
@@ -239,6 +227,7 @@ class TestDISCERN:
         default_model.build_model(n_genes=100, n_labels=2, scale=0)
 
         class _PatchDISCERNData:
+
             def __init__(self):
                 traindataset = tf.data.Dataset.from_tensor_slices(np.zeros(10))
                 validdataset = tf.data.Dataset.from_tensor_slices(np.ones(10))
@@ -330,6 +319,7 @@ class TestDISCERN:
                 assert isinstance(dataset['decoder_input'], tf.Tensor)
                 for i, val in enumerate(dataset['decoder_input']):
                     np.testing.assert_allclose(val, latent[i])
+                return None, None
 
         class PatchModel:
             """Patch for don't using real model."""

@@ -28,8 +28,16 @@ def tensorflow_savedmodel(tmp_path, default_model):
             "batch_input_dec":
             tf.zeros((10, model.input_shape["batch_input_dec"][1]))
         },
-                  y=(tf.zeros((10, model.input_shape["input_data"][1])),
-                     tf.zeros((10, model.input_shape["input_data"][1]))),
+                  y={
+                      "decoder_counts":
+                      tf.zeros((10, model.input_shape["input_data"][1])),
+                      "decoder_dropouts":
+                      tf.zeros((10, model.input_shape["input_data"][1])),
+                      "sigma_regularization":
+                      tf.constant(0.0, shape=(10, 1)),
+                      "mmdpp":
+                      tf.constant(0.0, shape=(10, 1)),
+                  },
                   verbose=0,
                   epochs=1,
                   batch_size=5)
@@ -39,7 +47,7 @@ def tensorflow_savedmodel(tmp_path, default_model):
     return _generate_model, modelfile
 
 
-@pytest.mark.parametrize("case", ["normal", "failing", "wo_optimizer"])
+@pytest.mark.parametrize("case", ["normal", "failing"])
 def test_load_step_from_hd5file(savedmodel, case):
     """Test model step loading from hdf5-file."""
     model, modelfile = savedmodel
@@ -48,13 +56,6 @@ def test_load_step_from_hd5file(savedmodel, case):
         with h5py.File(modelfile, 'a') as file:
             del file["optimizer_weights"]
         expected = 0
-    elif case == "wo_optimizer":
-        with h5py.File(modelfile, 'a') as file:
-            file["optimizer_weights"]["training"]["iter:0"] = file[
-                "optimizer_weights"]["training"]["Adam"]["iter:0"]
-            del file["optimizer_weights"]["training"]["Adam"]
-        expected = model.optimizer.iterations
-
     else:
         expected = model.optimizer.iterations
 
@@ -124,8 +125,8 @@ def test_create_model(monkeypatch):
                     "encoder_input": [None, 10]
                 }
                 self.expected_args = {
-                    "encoder_input": "input_data:0",
-                    "encoder_labels": "batch_input_enc:0"
+                    "encoder_input": "input_data",
+                    "encoder_labels": "batch_input_enc"
                 }
             else:
                 self.input_shape = {
@@ -134,7 +135,7 @@ def test_create_model(monkeypatch):
                 }
                 self.expected_args = {
                     "decoder_input": "gaussian",
-                    "decoder_labels": "batch_input_dec:0"
+                    "decoder_labels": "batch_input_dec"
                 }
 
         def __call__(self, inputs):
@@ -196,8 +197,8 @@ def test_create_model(monkeypatch):
         assert set(inputs.keys()) == set(
             ("input_data", "batch_input_enc", "batch_input_dec"))
         for key, layer in inputs.items():
-            assert isinstance(layer, tf.Tensor)
-            assert layer.name == key + ":0"
+            assert tf.keras.backend.is_keras_tensor(layer)
+            assert layer.name == key
 
     monkeypatch.setattr(tf.keras, "Model", patch_model)
 

@@ -42,6 +42,7 @@ def test_setup_exp(parameters, xla, disable_gpu_settings):
     assert "parallel_pc" in hparams['training']
     assert "GPU" in hparams['training']
     assert "XLA" in hparams['training']
+    xla = "autoclustering" if xla else ""
     assert tf.config.optimizer.get_jit() == xla
 
 

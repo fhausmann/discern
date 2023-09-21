@@ -125,9 +125,9 @@ class VisualisationCallback(callbacks.Callback):  # pylint: disable=too-few-publ
             if dataiterator.keys() != self._data["original"].keys():
                 continue
             predictions = self.model.predict(dataiterator,
-                                             batch_size=batch_size)[:2]
-            predictions = functions.sample_counts(counts=predictions[0],
-                                                  probabilities=predictions[1],
+                                             batch_size=batch_size)
+            predictions = functions.sample_counts(counts=predictions["decoder_counts"],
+                                                  probabilities=predictions["decoder_dropouts"],
                                                   var=self._initial_data.var,
                                                   uns=self._initial_data.uns)
             logdir = self._outdir.joinpath("projected_to_{}".format(dataset))
@@ -186,7 +186,7 @@ class VisualisationCallback(callbacks.Callback):  # pylint: disable=too-few-publ
 def create_callbacks(early_stopping_limits: Dict[str, Any],
                      exp_folder: pathlib.Path,
                      inputdata: Optional[io.DISCERNData] = None,
-                     umap_cells_no: Optional[int] = None,
+                     umap_cells_no: int = 200,
                      profile_batch: int = 2,
                      freq_of_viz: int = 30) -> List[callbacks.Callback]:
     """Generate list of callbacks used by tensorflow model.fit.

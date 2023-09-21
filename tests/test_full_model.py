@@ -8,19 +8,15 @@ def _compute_loss(waemodel, predicted, trueoutput):
     targets = {
         "decoder_counts": trueoutput,
         "decoder_dropouts": trueoutput,
-        "sigma_regularization": waemodel._targets[2],  # pylint: disable=protected-access
-        "mmdpp": waemodel._targets[3],  # pylint: disable=protected-access
+        "sigma_regularization": np.zeros((trueoutput.shape[0], 1)),
+        "mmdpp": np.zeros((trueoutput.shape[0], 1)),
     }
     losses = {
         k: waemodel.loss[k](target, predicted[k])
         for k, target in targets.items()
     }
 
-    weighted_losses = {
-        k: waemodel.loss_weights[k] * loss
-        for k, loss in losses.items()
-    }
-    return sum(weighted_losses.values())
+    return sum(losses.values())
 
 
 @pytest.mark.forked
@@ -59,8 +55,21 @@ def test_model_overfit(default_model, anndata_file):
     labels = tf.one_hot(train_data.obs.batch.cat.codes.values.astype(int),
                         2,
                         dtype=tf.float32)
-    model.wae_model.fit(x=(labels, labels, train_data.X),
-                        y=(train_data.X, train_data.X),
+    model.wae_model.fit(x={
+        'input_data': train_data.X,
+        "batch_input_enc": labels,
+        "batch_input_dec": labels,
+    },
+                        y={
+                            "decoder_counts":
+                            train_data.X,
+                            "decoder_dropouts":
+                            train_data.X,
+                            "sigma_regularization":
+                            tf.constant(0.0, shape=(train_data.X.shape[0], 1)),
+                            "mmdpp":
+                            tf.constant(0.0, shape=(train_data.X.shape[0], 1)),
+                        },
                         epochs=200,
                         verbose=0)
 
@@ -68,7 +77,7 @@ def test_model_overfit(default_model, anndata_file):
         "batch_input_enc": labels,
         "batch_input_dec": labels,
         "input_data": train_data.X,
-    })[0]
+    })["decoder_counts"]
 
     got[got < 0.1] = 0
     n_close = np.count_nonzero(np.isclose(got, train_data.X, atol=0.2), axis=1)

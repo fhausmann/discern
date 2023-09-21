@@ -19,6 +19,7 @@ _MODEL_INPUT_SHAPE: int = 20
 @pytest.fixture
 def tensorflow_model():
     """Create a tensorflow model which has is similar to discern."""
+
     def _encoder():
         encoder_input1 = tf.keras.layers.Input(_MODEL_INPUT_SHAPE,
                                                name="encoder_input")
@@ -64,7 +65,10 @@ def tensorflow_model():
         'batch_input_enc': input2,
         'batch_input_dec': input3,
     },
-                          outputs=[output, output],
+                          outputs={
+                              "decoder_counts": output,
+                              "decoder_dropouts": output
+                          },
                           name="decoder")
 
 
@@ -229,6 +233,7 @@ class TestVisualisationCallback:
     def test_on_epoch_end(self, monkeypatch, tmp_path, anndata_file,
                           input_epoch):
         """Test on_epoch_end function."""
+
         def _check_input(epoch, _):
             assert epoch == input_epoch + 1
             if (input_epoch - 1) % 2 == 0:
@@ -246,6 +251,7 @@ class TestVisualisationCallback:
 
     def test_on_train_end(self, monkeypatch, tmp_path, anndata_file):
         """Test _on_train_end function."""
+
         def _check_input(epoch, _):
             assert epoch == "end"
 
@@ -313,4 +319,4 @@ class TestDelayedEarlyStopping:
             callback.on_epoch_end(epoch=i, logs={"val_loss": i})
             if callback.model.stop_training:
                 break
-        assert i == (delay + max(patience, 1))
+        assert i == max((delay + patience), 1)

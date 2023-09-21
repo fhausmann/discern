@@ -21,14 +21,15 @@ _LOGGER = logging.getLogger(__name__)
 
 def _load_step_from_hd5file(filepath: pathlib.Path):
     with h5py.File(filepath, 'r') as file:
-        training_config = file.get('optimizer_weights', None)
-        if training_config:
-            training_weights = training_config["training"]
-            if "iter:0" in training_weights.keys():
-                return training_weights["iter:0"][()]
+        training_config = file.get('optimizer_weights', {})
+        if "iteration:0" in training_config.keys():
+            return training_config["iteration:0"][()]
+        for training_weights in training_config.values():
+            if "iteration:0" in training_weights.keys():
+                return training_weights["iteration:0"][()]
             for weights in training_weights.values():
-                if "iter:0" in weights.keys():
-                    return weights["iter:0"][()]
+                if "iteration:0" in weights.keys():
+                    return weights["iteration:0"][()]
         return 0
 
 
@@ -44,8 +45,7 @@ def load_model_from_directory(
             None and zero if no models could be loaded.
 
     """
-    custom_objects = functions.getmembers("tensorflow_addons.optimizers")
-    custom_objects.update(**customlayers.getmembers())
+    custom_objects = customlayers.getmembers()
     custom_objects.update(**customlosses.getmembers())
     modelfile = directory.joinpath("best_model.hdf5")
     if modelfile.exists():

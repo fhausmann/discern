@@ -1,4 +1,4 @@
-FROM tensorflow/tensorflow:2.1.0-gpu-py3 as builder
+FROM tensorflow/tensorflow:2.11.0-gpu as builder
 
 ENV LC_ALL C.UTF-8
 ENV TZ=Europe/Berlin
@@ -10,22 +10,28 @@ ENV PYTHONFAULTHANDLER=1 \
   PIP_DISABLE_PIP_VERSION_CHECK=on \
   PIP_DEFAULT_TIMEOUT=100 \
   NUMBA_CACHE_DIR=/tmp \
-  POETRY_VIRTUALENVS_CREATE=false \
+  POETRY_VIRTUALENVS_CREATE=true \
   OMP_NUM_THREADS=4 \
   NUMBA_NUM_THREADS=4 \
-  PATH="$PATH:$HOME/.poetry/bin"
+  PATH="$PATH:$HOME/.local/bin"
 
-RUN apt update && apt-get install -y git && apt-get clean
+RUN apt update && apt-get install -y git python3.9 python3.9-dev && apt-get clean
 
 RUN mkdir /data
 WORKDIR /data
 RUN ulimit -c 0
 
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+RUN python3.9 -m pip install -U pip
+
+RUN curl -sSL https://install.python-poetry.org | python3.9 -
 
 COPY ./pyproject.toml ./poetry.lock /data/
-RUN $HOME/.poetry/bin/poetry install --no-dev --no-interaction --no-root
+RUN mkdir -p /root/.cache/pypoetry/virtualenvs/ && \
+  touch /root/.cache/pypoetry/virtualenvs/envs.toml && \
+  $HOME/.local/bin/poetry env use 3.9
+RUN $HOME/.local/bin/poetry install --only main --no-interaction --no-root
 
 FROM builder
 COPY ./ /data/
-RUN $HOME/.poetry/bin/poetry install --no-dev --no-interaction
+RUN $HOME/.local/bin/poetry install --without dev,doc --no-interaction
+ENTRYPOINT ["/root/.local/bin/poetry", "run"]

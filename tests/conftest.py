@@ -48,7 +48,6 @@ def anndata_file():
                                                   p=[0.6, 0.4],
                                                   replace=True,
                                                   size=nvals)
-
         return processed
 
     return _create_file
@@ -80,7 +79,7 @@ def parameters(tmp_path):
                 "balanced_split": True,
                 "split_seed": 0,
                 "test_cells": 0,
-                "valid_cells": 100
+                "valid_cells": 0.1
             }
         },
         "model": {
@@ -106,7 +105,7 @@ def parameters(tmp_path):
             "latent_dim": 16,
             "output_fn": None,
             "reconstruction_loss": {
-                "name": "HuberLoss",
+                "name": "tensorflow.keras.losses.Huber",
                 "delta": 11.0,
             },
             "wae_lambda": 11.32395861201524,
@@ -125,7 +124,7 @@ def parameters(tmp_path):
             },
             "max_steps": 100,
             "optimizer": {
-                "algorithm": "tensorflow_addons.optimizers.RectifiedAdam",
+                "algorithm": "tensorflow.keras.optimizers.Adam",
                 "amsgrad": False,
                 "beta_1": 0.85,
                 "beta_2": 0.95,

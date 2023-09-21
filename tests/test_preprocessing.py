@@ -67,7 +67,7 @@ def test_merge_data_sets(anndata_file, n_batches, batchcol):
     """Test merge_data_sets function."""
     anndata_file = anndata_file(10)
     anndata_file.obs.drop(columns=['batch'], inplace=True, errors='ignore')
-    batches_to_check = {'batch{}'.format(i) for i in range(n_batches)}
+    batches_to_check = sorted(['batch{}'.format(i) for i in range(n_batches)])
     inputs = {}
     for key in batches_to_check:
         tmp = anndata_file.copy()
@@ -79,15 +79,14 @@ def test_merge_data_sets(anndata_file, n_batches, batchcol):
                  for key in inputs})
     outputcounts = outputdataset.obs.batch.value_counts()
     if batchcol != "batch":
-        batches_to_check = {k + batchcol for k in batches_to_check}
-    assert set(outputcounts.index) == batches_to_check
+        batches_to_check = sorted([k + batchcol for k in batches_to_check])
+    assert set(outputcounts.index) == set(batches_to_check)
     assert (outputcounts == 10).all()
     for i in range(n_batches):
         subset = outputdataset[outputdataset.obs.batch.cat.codes == i]
         np.testing.assert_allclose(subset.X, anndata_file.X)
     assert len(mapping) == n_batches
-    assert set(mapping.values()) == batches_to_check
-    assert set(mapping.keys()) == set(range(n_batches))
+    np.testing.assert_equal(mapping, batches_to_check)
     assert "dataset" in outputdataset.obs.columns
     assert set(outputdataset.obs["dataset"].unique()) == set(inputs.keys())
 

@@ -87,18 +87,6 @@ class Lnorm(tf.keras.losses.Loss):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-class HuberLoss(tf.keras.losses.Huber):
-    """Huber loss."""
-
-    # pylint: disable=too-few-public-methods
-
-    def call(self, y_true, y_pred):
-        """Calculate Huber loss."""
-        norm = super().call(y_true, y_pred)
-        norm = tf.reduce_mean(norm, axis=-1)
-        return norm
-
-
 class MaskedCrossEntropy(tf.keras.losses.BinaryCrossentropy):
     """Categorical crossentropy Loss with creates mask in true data.
 
@@ -159,7 +147,8 @@ def reconstruction_loss(loss_type: Dict[str, Any]) -> tf.Tensor:
     if module_name:
         module = importlib.import_module(module_name)
         loss = getattr(module, func_name)
-    loss = globals()[func_name]
+    else:
+        loss = globals()[func_name]
     return loss(**loss_type)
 
 

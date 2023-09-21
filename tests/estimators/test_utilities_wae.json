@@ -27,11 +27,8 @@
                     "activation": "linear",
                     "use_bias": false,
                     "kernel_initializer": {
-                        "class_name": "VarianceScaling",
+                        "class_name": "HeNormal",
                         "config": {
-                            "scale": 2.0,
-                            "mode": "fan_in",
-                            "distribution": "truncated_normal",
                             "seed": null
                         }
                     },
@@ -164,34 +161,22 @@
                 ]
             },
             {
-                "class_name": "TensorFlowOpLayer",
+                "class_name": "TFOpLambda",
                 "config": {
-                    "name": "Relu",
+                    "name": "tf.nn.relu",
                     "trainable": true,
                     "dtype": "float32",
-                    "node_def": {
-                        "name": "Relu",
-                        "op": "Relu",
-                        "input": [
-                            "add/Identity"
-                        ],
-                        "attr": {
-                            "T": {
-                                "type": "DT_FLOAT"
-                            }
-                        }
-                    },
-                    "constants": {}
+                    "function": "nn.relu"
                 },
-                "name": "tf_op_layer_Relu",
+                "name": "tf.nn.relu",
                 "inbound_nodes": [
                     [
-                        [
-                            "add",
-                            0,
-                            0,
-                            {}
-                        ]
+                        "add",
+                        0,
+                        0,
+                        {
+                            "name": null
+                        }
                     ]
                 ]
             },
@@ -209,7 +194,7 @@
                 "inbound_nodes": [
                     [
                         [
-                            "tf_op_layer_Relu",
+                            "tf.nn.relu",
                             0,
                             0,
                             {}
@@ -227,11 +212,8 @@
                     "activation": "linear",
                     "use_bias": false,
                     "kernel_initializer": {
-                        "class_name": "VarianceScaling",
+                        "class_name": "HeNormal",
                         "config": {
-                            "scale": 2.0,
-                            "mode": "fan_in",
-                            "distribution": "truncated_normal",
                             "seed": null
                         }
                     },
@@ -349,34 +331,22 @@
                 ]
             },
             {
-                "class_name": "TensorFlowOpLayer",
+                "class_name": "TFOpLambda",
                 "config": {
-                    "name": "Relu_1",
+                    "name": "tf.nn.relu_1",
                     "trainable": true,
                     "dtype": "float32",
-                    "node_def": {
-                        "name": "Relu_1",
-                        "op": "Relu",
-                        "input": [
-                            "add_1/Identity"
-                        ],
-                        "attr": {
-                            "T": {
-                                "type": "DT_FLOAT"
-                            }
-                        }
-                    },
-                    "constants": {}
+                    "function": "nn.relu"
                 },
-                "name": "tf_op_layer_Relu_1",
+                "name": "tf.nn.relu_1",
                 "inbound_nodes": [
                     [
-                        [
-                            "add_1",
-                            0,
-                            0,
-                            {}
-                        ]
+                        "add_1",
+                        0,
+                        0,
+                        {
+                            "name": null
+                        }
                     ]
                 ]
             },
@@ -394,7 +364,7 @@
                 "inbound_nodes": [
                     [
                         [
-                            "tf_op_layer_Relu_1",
+                            "tf.nn.relu_1",
                             0,
                             0,
                             {}
@@ -412,11 +382,8 @@
                     "activation": "linear",
                     "use_bias": true,
                     "kernel_initializer": {
-                        "class_name": "VarianceScaling",
+                        "class_name": "HeNormal",
                         "config": {
-                            "scale": 2.0,
-                            "mode": "fan_in",
-                            "distribution": "truncated_normal",
                             "seed": null
                         }
                     },
@@ -452,11 +419,8 @@
                     "activation": "linear",
                     "use_bias": true,
                     "kernel_initializer": {
-                        "class_name": "VarianceScaling",
+                        "class_name": "HeNormal",
                         "config": {
-                            "scale": 2.0,
-                            "mode": "fan_in",
-                            "distribution": "truncated_normal",
                             "seed": null
                         }
                     },
@@ -538,11 +502,8 @@
                     "activation": "linear",
                     "use_bias": false,
                     "kernel_initializer": {
-                        "class_name": "VarianceScaling",
+                        "class_name": "HeNormal",
                         "config": {
-                            "scale": 2.0,
-                            "mode": "fan_in",
-                            "distribution": "truncated_normal",
                             "seed": null
                         }
                     },
@@ -675,34 +636,22 @@
                 ]
             },
             {
-                "class_name": "TensorFlowOpLayer",
+                "class_name": "TFOpLambda",
                 "config": {
-                    "name": "Relu",
+                    "name": "tf.nn.relu",
                     "trainable": true,
                     "dtype": "float32",
-                    "node_def": {
-                        "name": "Relu",
-                        "op": "Relu",
-                        "input": [
-                            "add/Identity"
-                        ],
-                        "attr": {
-                            "T": {
-                                "type": "DT_FLOAT"
-                            }
-                        }
-                    },
-                    "constants": {}
+                    "function": "nn.relu"
                 },
-                "name": "tf_op_layer_Relu",
+                "name": "tf.nn.relu",
                 "inbound_nodes": [
                     [
-                        [
-                            "add",
-                            0,
-                            0,
-                            {}
-                        ]
+                        "add",
+                        0,
+                        0,
+                        {
+                            "name": null
+                        }
                     ]
                 ]
             },
@@ -720,7 +669,7 @@
                 "inbound_nodes": [
                     [
                         [
-                            "tf_op_layer_Relu",
+                            "tf.nn.relu",
                             0,
                             0,
                             {}
@@ -738,11 +687,8 @@
                     "activation": "linear",
                     "use_bias": false,
                     "kernel_initializer": {
-                        "class_name": "VarianceScaling",
+                        "class_name": "HeNormal",
                         "config": {
-                            "scale": 2.0,
-                            "mode": "fan_in",
-                            "distribution": "truncated_normal",
                             "seed": null
                         }
                     },
@@ -860,34 +806,22 @@
                 ]
             },
             {
-                "class_name": "TensorFlowOpLayer",
+                "class_name": "TFOpLambda",
                 "config": {
-                    "name": "Relu_1",
+                    "name": "tf.nn.relu_1",
                     "trainable": true,
                     "dtype": "float32",
-                    "node_def": {
-                        "name": "Relu_1",
-                        "op": "Relu",
-                        "input": [
-                            "add_1/Identity"
-                        ],
-                        "attr": {
-                            "T": {
-                                "type": "DT_FLOAT"
-                            }
-                        }
-                    },
-                    "constants": {}
+                    "function": "nn.relu"
                 },
-                "name": "tf_op_layer_Relu_1",
+                "name": "tf.nn.relu_1",
                 "inbound_nodes": [
                     [
-                        [
-                            "add_1",
-                            0,
-                            0,
-                            {}
-                        ]
+                        "add_1",
+                        0,
+                        0,
+                        {
+                            "name": null
+                        }
                     ]
                 ]
             },
@@ -905,7 +839,7 @@
                 "inbound_nodes": [
                     [
                         [
-                            "tf_op_layer_Relu_1",
+                            "tf.nn.relu_1",
                             0,
                             0,
                             {}
@@ -923,11 +857,8 @@
                     "activation": "linear",
                     "use_bias": true,
                     "kernel_initializer": {
-                        "class_name": "VarianceScaling",
+                        "class_name": "HeNormal",
                         "config": {
-                            "scale": 2.0,
-                            "mode": "fan_in",
-                            "distribution": "truncated_normal",
                             "seed": null
                         }
                     },
@@ -963,11 +894,8 @@
                     "activation": "sigmoid",
                     "use_bias": true,
                     "kernel_initializer": {
-                        "class_name": "VarianceScaling",
+                        "class_name": "HeNormal",
                         "config": {
-                            "scale": 2.0,
-                            "mode": "fan_in",
-                            "distribution": "truncated_normal",
                             "seed": null
                         }
                     },

@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import anndata
 import numpy as np
 import tensorflow as tf
-from tensorflow_addons import optimizers as tfa_opt
 
 from discern._config import DISCERNConfig
 from discern import functions, io
@@ -128,7 +127,6 @@ class DISCERN(DISCERNConfig):  # pylint: disable=too-many-instance-attributes
         config = self.optimizer_config.copy()
         initial_learning_rate = config.pop("learning_rate")
         decay = config.pop("learning_decay", None)
-        lookahead = config.pop("Lookahead", None)
         algorithm = functions.get_function_by_name(config.pop("algorithm"))
 
         if decay:
@@ -140,8 +138,6 @@ class DISCERN(DISCERNConfig):  # pylint: disable=too-many-instance-attributes
             learning_rate = initial_learning_rate
 
         opt_algorithm = algorithm(learning_rate=learning_rate, **config)
-        if lookahead:
-            opt_algorithm = tfa_opt.lookahead.Lookahead(opt_algorithm)
 
         return opt_algorithm
 
@@ -162,8 +158,6 @@ class DISCERN(DISCERNConfig):  # pylint: disable=too-many-instance-attributes
         reconstruction_loss = losses.reconstruction_loss(
             self.recon_loss_type.copy())
 
-        dummy = tf.constant(0.0, shape=(1, 1))
-
         self.wae_model.compile(
             optimizer=optimizer,
             loss={
@@ -182,10 +176,6 @@ class DISCERN(DISCERNConfig):  # pylint: disable=too-many-instance-attributes
                 "decoder_dropouts": self.weighting_decoder_dropout,
                 "sigma_regularization": self.weighting_random_encoder,
                 "mmdpp": self.wae_lambda,
-            },
-            target_tensors={
-                "sigma_regularization": dummy,
-                "mmdpp": dummy,
             })
 
     def training(self,
@@ -235,11 +225,9 @@ class DISCERN(DISCERNConfig):  # pylint: disable=too-many-instance-attributes
             self.wae_model.save(savepath, overwrite=True)
         return result
 
-    def generate_latent_codes(
-            self, counts: Union[tf.Tensor,
-                                np.ndarray], batch_labels: Union[tf.Tensor,
-                                                                 np.ndarray],
-            batch_size: int) -> Tuple[np.ndarray, np.ndarray]:
+    def generate_latent_codes(self, counts: Union[tf.Tensor, np.ndarray],
+                              batch_labels: Union[tf.Tensor, np.ndarray],
+                              batch_size: int) -> Dict[str, np.ndarray]:
         """Generate latent codes from count and batch labels.
 
         Args:
@@ -249,7 +237,7 @@ class DISCERN(DISCERNConfig):  # pylint: disable=too-many-instance-attributes
             batch_size (int): Size of one batch.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: latent codes and sigma values.
+            Dict[str, np.ndarray]: latent codes and sigma values.
 
         """
         dataset = {
@@ -258,10 +246,11 @@ class DISCERN(DISCERNConfig):  # pylint: disable=too-many-instance-attributes
         }
         return self.encoder.predict(dataset, batch_size=batch_size)
 
-    def generate_cells_from_latent(
-            self, latent_codes: Union[tf.Tensor, np.ndarray],
-            output_batch_labels: Union[tf.Tensor, np.ndarray],
-            batch_size: int) -> Tuple[np.ndarray, np.ndarray]:
+    def generate_cells_from_latent(self, latent_codes: Union[tf.Tensor,
+                                                             np.ndarray],
+                                   output_batch_labels: Union[tf.Tensor,
+                                                              np.ndarray],
+                                   batch_size: int) -> Dict[str, np.ndarray]:
         """Generate counts from latent codes and batch labels.
 
         Args:
@@ -271,13 +260,17 @@ class DISCERN(DISCERNConfig):  # pylint: disable=too-many-instance-attributes
             batch_size (int): Size of one batch.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: the generated count data and dropout probabilities.
+            Dict[str, np.ndarray]: the generated count data and dropout probabilities.
         """
         dataset = {
             'decoder_input': tf.cast(latent_codes, tf.float32),
             'decoder_labels': tf.cast(output_batch_labels, tf.float32),
         }
-        return self.decoder.predict(dataset, batch_size=batch_size)
+        predictions = self.decoder.predict(dataset, batch_size=batch_size)
+        if isinstance(predictions, dict):
+            return predictions
+        return dict(decoder_counts=predictions[0],
+                    decoder_dropouts=predictions[1])
 
     def _prepare_and_generate_latent(
             self,

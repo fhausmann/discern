@@ -346,7 +346,7 @@ def run_processes_with_cpu_requirements(function: Callable[..., None],
     processes: List[multiprocessing.Process] = list()
     while sorted_req:
         with lock:
-            i = bisect.bisect_right(sorted_req, available_cpus.value) - 1
+            i = bisect.bisect_right(sorted_req, available_cpus.value) - 1 # type: ignore
         if i < 0:
             finished.wait()
             finished.clear()
@@ -354,7 +354,7 @@ def run_processes_with_cpu_requirements(function: Callable[..., None],
         threads = sorted_req.pop(i)
         args = arguments.pop(i)
         with lock:
-            available_cpus.value -= threads
+            available_cpus.value -= threads # type: ignore
         processes.append(
             multiprocessing.Process(target=_func,
                                     args=(args, available_cpus, lock, finished,
