@@ -1,4 +1,4 @@
-FROM tensorflow/tensorflow:2.11.0-gpu as builder
+FROM tensorflow/tensorflow:2.13.0-gpu as builder
 
 ENV LC_ALL C.UTF-8
 ENV TZ=Europe/Berlin
@@ -15,7 +15,9 @@ ENV PYTHONFAULTHANDLER=1 \
   NUMBA_NUM_THREADS=4 \
   PATH="$PATH:$HOME/.local/bin"
 
-RUN apt update && apt-get install -y git python3.9 python3.9-dev && apt-get clean
+RUN apt update && apt-get install -y git python3.9 python3.9-dev && \
+    apt-get clean  && \
+    curl https://bootstrap.pypa.io/get-pip.py | python3.9 - --user
 
 RUN mkdir /data
 WORKDIR /data
